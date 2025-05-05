@@ -3,7 +3,7 @@ using System.Collections;
 using UnityEngine.SceneManagement;
 using Cinemachine;
 
-namespace Unity.Game.Setup
+namespace Unity.Game
 {
     public class GameFlowManager : MonoBehaviour
     {
@@ -18,32 +18,42 @@ namespace Unity.Game.Setup
         [Header("StartGameLockedControllerTime")]
         [SerializeField, Tooltip("ゲーム開始時にカメラ操作を無効にする時間")] float m_StartGameLockedControllerTime = 0.3f;
 
+        public static string PreviousScene { get; private set; }    // 現在のシーン名
+        public bool GameIsEnding { get; private set; }  // ゲーム終了フラグ
+        float m_GameOverSceneTime;  // ゲーム終了シーンへの遷移時間
+        string m_GameOverSceneToLoad;   // ゲーム終了時に読み込むシーン名
         CinemachineFreeLook m_FreeLookCamera;
-        string m_ControllerAxisXName;
-        string m_ControllerAxisYName;
+        string m_ControllerAxisXName;   // カメラの x 軸名
+        string m_ControllerAxisYName;   // カメラの y 軸名
 
         private void Awake()
         {
+            EventManager.AddListener<GameOverEvent>(OnGameOver);    // GameOverEvent ブロードキャスト時に OnGameOver 実行
             m_FreeLookCamera = FindFirstObjectByType<CinemachineFreeLook>();
 
-            #if !UNITY_EDITOR
+#if !UNITY_EDITOR
             Cursor.lockState = CursorLockMode.Locked;   // カーソルロック
-            #endif
+#endif
 
             if (m_FreeLookCamera)
             {
-                m_ControllerAxisXName = m_FreeLookCamera.m_XAxis.m_InputAxisName;   // x 軸名を格納
-                m_ControllerAxisYName = m_FreeLookCamera.m_YAxis.m_InputAxisName;   // y 軸名を格納
-                m_FreeLookCamera.m_XAxis.m_InputAxisName = "";  // x 軸の入力無効
-                m_FreeLookCamera.m_YAxis.m_InputAxisName = "";  // y 軸の入力無効
+                // カメラ操作無効
+                m_ControllerAxisXName = m_FreeLookCamera.m_XAxis.m_InputAxisName;
+                m_ControllerAxisYName = m_FreeLookCamera.m_YAxis.m_InputAxisName;
+                m_FreeLookCamera.m_XAxis.m_InputAxisName = "";
+                m_FreeLookCamera.m_YAxis.m_InputAxisName = "";
             }
         }
-        // Start is called once before the first execution of Update after the MonoBehaviour is created
+        
         void Start()
         {
-            StartCoroutine(StartGameLockControll());    // ゲーム開始直後はカメラ操作を無効
+            StartCoroutine(StartGameLockControll());
         }
 
+        /// <summary>
+        /// ゲーム開始から一定時間経過後にカメラ操作を有効
+        /// </summary>
+        /// <returns></returns>
         IEnumerator StartGameLockControll()
         {
             while (m_StartGameLockedControllerTime > 0.0f)
@@ -54,19 +64,65 @@ namespace Unity.Game.Setup
                 {
                     if (m_FreeLookCamera)
                     {
-                        m_FreeLookCamera.m_XAxis.m_InputAxisName = m_ControllerAxisXName;  // x 軸の入力有効
-                        m_FreeLookCamera.m_YAxis.m_InputAxisName = m_ControllerAxisYName;  // y 軸の入力有効
+                        m_FreeLookCamera.m_XAxis.m_InputAxisName = m_ControllerAxisXName;
+                        m_FreeLookCamera.m_YAxis.m_InputAxisName = m_ControllerAxisYName;
                     }
                 }
 
-                yield return new WaitForEndOfFrame();   // 現フレームのレンダリング完了後に再開
+                yield return new WaitForEndOfFrame();
             }
         }
 
-        // Update is called once per frame
         void Update()
         {
+            if (GameIsEnding)
+            {
+                if (Time.time >= m_GameOverSceneTime)
+                {
 
+#if !UNITY_EDITOR
+            Cursor.lockState = CursorLockMode.None; // カーソルロック解除
+#endif
+
+                    PreviousScene = SceneManager.GetActiveScene().name;
+                    SceneManager.LoadScene(m_GameOverSceneToLoad);  // 勝敗に応じたシーンをロード
+                }
+            }
+        }
+
+        /// <summary>
+        /// ゲーム終了フラグをオン<br/>
+        /// 勝敗に応じてシーン名, シーン遷移時間を格納<br/>
+        /// カメラがプレイヤの追従を停止
+        /// </summary>
+        /// <param name="evt"></param>
+        void OnGameOver(GameOverEvent evt)
+        {
+            if (!GameIsEnding)
+            {
+                GameIsEnding = true;
+
+                if (evt.Win)
+                {
+                    m_GameOverSceneToLoad = m_WinScene;
+                    m_GameOverSceneTime = Time.time + m_WinSceneDelay;
+                }
+                else
+                {
+                    m_GameOverSceneToLoad = m_LoseScene;
+                    m_GameOverSceneTime = Time.time + m_LoseSceneDelay;
+
+                    if (m_FreeLookCamera)
+                    {
+                        m_FreeLookCamera.Follow = null;
+                    }
+                }
+            }
+        }
+
+        void OnDestroy()
+        {
+            EventManager.RemoveListener<GameOverEvent>(OnGameOver); // OnGameOver 登録解除
         }
     }
 }
