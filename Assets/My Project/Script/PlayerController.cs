@@ -9,7 +9,6 @@ namespace Unity.Game.Player
 
     public class PlayerController : MonoBehaviour
     {
-
         public float animSpeed = 1.5f;              // アニメーション再生速度設定
         public float lookSmoother = 3.0f;           // a smoothing setting for camera motion
         public bool useCurves = true;               // Mecanimでカーブ調整を使うか設定する
@@ -35,7 +34,7 @@ namespace Unity.Game.Player
         private Animator anim;                          // キャラにアタッチされるアニメーターへの参照
         private AnimatorStateInfo currentBaseState;         // base layerで使われる、アニメーターの現在の状態の参照
 
-        private GameObject cameraObject;    // メインカメラへの参照
+        private GameObject cameraObject;
         CinemachineFreeLook m_FreeLookCamera;
 
         // アニメーター各ステートへの参照
@@ -44,7 +43,6 @@ namespace Unity.Game.Player
         static int jumpState = Animator.StringToHash("Base Layer.Jump");
         static int restState = Animator.StringToHash("Base Layer.Rest");
 
-        // 初期化
         void Start()
         {
             anim = GetComponent<Animator>();
@@ -124,7 +122,6 @@ namespace Unity.Game.Player
             // 現在のベースレイヤーがjumpStateの時
             else if (currentBaseState.fullPathHash == jumpState)
             {
-                cameraObject.SendMessage("setCameraPositionJumpView");  // ジャンプ中のカメラに変更
                                                                         // ステートがトランジション中でない場合
                 if (!anim.IsInTransition(0))
                 {
@@ -137,8 +134,8 @@ namespace Unity.Game.Player
                         // GravityControl:1⇒ジャンプ中（重力無効）、0⇒重力有効
                         float jumpHeight = anim.GetFloat("JumpHeight");
                         float gravityControl = anim.GetFloat("GravityControl");
-                        if (gravityControl > 0)
-                            rb.useGravity = false;  //ジャンプ中の重力の影響を切る
+                        //if (gravityControl > 0)
+                            //rb.useGravity = false;  //ジャンプ中の重力の影響を切る
 
                         // レイキャストをキャラクターのセンターから落とす
                         Ray ray = new Ray(transform.position + Vector3.up, -Vector3.up);
