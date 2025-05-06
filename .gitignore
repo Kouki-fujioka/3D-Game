@@ -76,3 +76,6 @@ crashlytics-build.properties
 +# Asset Store files
 +/[Aa]ssets/*
 +!/[Aa]ssets/Project/
+
+# Models
+*.gguf
