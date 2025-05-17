@@ -54,7 +54,7 @@ namespace Unity.Game.UI
             EventManager.Broadcast(lookSensitivityUpdateEvent);
         }
 
-        public void CloseMenu() // DoneButton 押下時
+        public void CloseMenu() // ボタン (DoneButton) 押下時
         {
             SetMenuActivation(false);
         }
@@ -89,7 +89,7 @@ namespace Unity.Game.UI
 
         void Update()
         {
-            if (Input.GetButtonDown("Fire2"))    // InputManagerから設定
+            if (Input.GetButtonDown("Menu"))    // キー (TAB) 押下時
             {
                 ToggleMenu();
             }
